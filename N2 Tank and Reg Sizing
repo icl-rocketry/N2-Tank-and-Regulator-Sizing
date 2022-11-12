@@ -1,0 +1,105 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+#Gas Properties
+gamma = 1.4
+R = 287
+
+#Nitrogen Tank Parameters (in convenient units)
+V_litres = 2
+P_0_bar = 300
+T_0_degC = 20
+
+dt = 0.01
+
+#Engine/Mass Flow/Propellant Properties
+OF = 4
+mdot_prop = 1.3
+rho_fuel = 786
+m_prop = 8
+
+#Calculate 
+mdot_fuel = mdot_prop*(1/(1+OF))
+mdot_ox = mdot_prop*(OF/(1+OF))
+Vdot_fuel = mdot_fuel/rho_fuel
+tend = m_prop/mdot_prop
+
+#Approximate values for nitrous vapour pressures at start and end (based on empirical results)
+Pox0_bar = 40
+Pox1_bar = 27
+
+t = np.arange(0,tend,)
+
+#Regulator Parameters
+Vdot_litres = 1
+P_out_bar = 2
+
+#convert to SI units
+V = V_litres/1000
+Vdot = Vdot_litres/1000
+P0 = P_0_bar*10**5
+T0 = T_0_degC + 273.15
+rho0 = P0/(R*T0)
+Pout = P_out_bar*10**5
+m_i = P0*V/(R*T0)
+
+tau = Pout*Vdot/(R*T0*V)
+
+def RK4(t0, y0, h, tend):
+    t = np.arange(t0, tend+h, h)
+    y = np.ndarray((len(t)))
+    y[0] = y0
+    for i in range(0,len(t)-1):
+        k1 = h*func(t[i],y[i])
+        k2 = h*func(t[i] + 0.5*h, y[i] + 0.5*k1)
+        k3 = h*func(t[i] + 0.5*h, y[i] + 0.5*k2)
+        k4 = h*func(t[i] + h, y[i] + k3)
+        y[i+1] = y[i] + (k1+2*k2+2*k3+k4)/6
+    return t,y
+
+def func(t,rho):
+    
+    
+    tau = Pout*Vdot/(R*T0*V)
+    P = P0*(rho/rho0)**gamma
+    if P <= Pout:
+        F = 0
+    else:        
+        F = -tau*(rho/rho0)**(1-gamma)
+    return F
+
+
+
+t,rho = RK4(0,rho0,dt,tend)
+P = P0*(rho/rho0)**gamma
+T = P/(rho*R)
+
+mdot = (Pout/(R*T))*Vdot
+mdot[P<=Pout] = 0
+
+mtank = np.ndarray(len(mdot))
+
+
+for i in range(0, len(mdot)):    
+    mtank[i] = m_i - np.trapz(mdot[0:i])*dt
+
+
+plt.plot(t,P/10**5)
+plt.xlabel('Time [s]')
+plt.ylabel('Tank Pressure [bar]')
+plt.show()
+
+plt.plot(t,T-273.15)
+plt.xlabel('Time [s]')
+plt.ylabel('Temperature [degC]')
+plt.show()
+
+plt.plot(t,mdot)
+plt.xlabel('Time [s]')
+plt.ylabel('Mass Flow Rate [kg/s]')
+plt.show()
+
+plt.plot(t,mtank)
+plt.xlabel('Time [s]')
+plt.ylabel('Mass of Nitrogen in Tank [kg]')
+plt.show()
