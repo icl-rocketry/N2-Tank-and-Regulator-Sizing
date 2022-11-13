@@ -19,7 +19,7 @@ T_0_degC = 20
 OF = 4
 mdot_prop = 1.3
 rho_fuel = 786
-rho_ox = 900 #approx. average nitrous density
+rho_ox = 800 #approx. average nitrous density
 m_prop = 8
 
 #Calculate 
